@@ -703,8 +703,8 @@ describe('Settlement', function () {
         describe('checking surplus', async function () {
             it('should get surplus', async function () {
                 const dataFormFixture = await loadFixture(initContractsForSettlement);
-                const now = await time.latest() + 10;
-                const auction = await buildAuctionDetails({ startTime: now, delay: 60, initialRateBump: 1000000n });
+                const auctionStartTime = await time.latest() + 10;
+                const auction = await buildAuctionDetails({ startTime: auctionStartTime, delay: 60, initialRateBump: 1000000n });
                 const setupData = { ...dataFormFixture, auction };
                 const {
                     contracts: { dai, weth, resolver },
@@ -719,7 +719,7 @@ describe('Settlement', function () {
                     protocolFeeRecipient: bob.address,
                 });
 
-                await time.setNextBlockTimestamp(now);
+                await time.setNextBlockTimestamp(auctionStartTime);
                 const txn = await resolver.settleOrders(fillOrderToData);
                 await expect(txn).to.changeTokenBalances(dai, [resolver, alice], [ether('100'), ether('-100')]);
                 await expect(txn).to.changeTokenBalances(weth, [owner, alice, bob], [ether('-0.11'), ether('0.105'), ether('0.005')]);
@@ -727,8 +727,8 @@ describe('Settlement', function () {
 
             it('should get surplus = 0, if estimatedTakingAmount < actualAmount', async function () {
                 const dataFormFixture = await loadFixture(initContractsForSettlement);
-                const now = await time.latest() + 10;
-                const auction = await buildAuctionDetails({ startTime: now, delay: 60, initialRateBump: 1000000n });
+                const auctionStartTime = await time.latest() + 10;
+                const auction = await buildAuctionDetails({ startTime: auctionStartTime, delay: 60, initialRateBump: 1000000n });
                 const setupData = { ...dataFormFixture, auction };
                 const {
                     contracts: { dai, weth, resolver },
@@ -743,7 +743,7 @@ describe('Settlement', function () {
                     protocolFeeRecipient: bob.address,
                 });
 
-                await time.setNextBlockTimestamp(now);
+                await time.setNextBlockTimestamp(auctionStartTime);
                 const txn = await resolver.settleOrders(fillOrderToData);
                 await expect(txn).to.changeTokenBalances(dai, [resolver, alice], [ether('100'), ether('-100')]);
                 await expect(txn).to.changeTokenBalances(weth, [owner, alice, bob], [ether('-0.11'), ether('0.11'), ether('0')]);
@@ -751,8 +751,8 @@ describe('Settlement', function () {
 
             it('should failed if protocolSurplusFee > 100', async function () {
                 const dataFormFixture = await loadFixture(initContractsForSettlement);
-                const now = await time.latest() + 10;
-                const auction = await buildAuctionDetails({ startTime: now, delay: 60, initialRateBump: 1000000n });
+                const auctionStartTime = await time.latest() + 10;
+                const auction = await buildAuctionDetails({ startTime: auctionStartTime, delay: 60, initialRateBump: 1000000n });
                 const setupData = { ...dataFormFixture, auction };
                 const {
                     contracts: { resolver, settlement },
@@ -767,14 +767,14 @@ describe('Settlement', function () {
                     protocolFeeRecipient: bob.address,
                 });
 
-                await time.setNextBlockTimestamp(now);
+                await time.setNextBlockTimestamp(auctionStartTime);
                 await expect(resolver.settleOrders(fillOrderToData)).to.be.revertedWithCustomError(settlement, 'InvalidProtocolSurplusFee');
             });
 
             it('should failed if estimatedTakingAmount < order.takingAmount', async function () {
                 const dataFormFixture = await loadFixture(initContractsForSettlement);
-                const now = await time.latest() + 10;
-                const auction = await buildAuctionDetails({ startTime: now, delay: 60, initialRateBump: 1000000n });
+                const auctionStartTime = await time.latest() + 10;
+                const auction = await buildAuctionDetails({ startTime: auctionStartTime, delay: 60, initialRateBump: 1000000n });
                 const setupData = { ...dataFormFixture, auction };
                 const {
                     contracts: { resolver, settlement },
@@ -789,7 +789,7 @@ describe('Settlement', function () {
                     protocolFeeRecipient: bob.address,
                 });
 
-                await time.setNextBlockTimestamp(now);
+                await time.setNextBlockTimestamp(auctionStartTime);
                 await expect(resolver.settleOrders(fillOrderToData)).to.be.revertedWithCustomError(settlement, 'InvalidEstimatedTakingAmount');
             });
         });
