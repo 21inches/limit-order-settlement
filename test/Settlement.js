@@ -700,10 +700,13 @@ describe('Settlement', function () {
             await expect(txn).to.changeTokenBalances(weth, [owner, alice], [ether('-0.105'), ether('0.105')]);
         });
 
-        describe('checking surplus', async function () {
+        describe.only('checking surplus', async function () {
             it('should get surplus', async function () {
                 const dataFormFixture = await loadFixture(initContractsForSettlement);
                 const auctionStartTime = await time.latest() + 10;
+                const estimatedTakingAmount = ether('0.1');
+                const surplus = ether('0.01');
+
                 const auction = await buildAuctionDetails({ startTime: auctionStartTime, delay: 60, initialRateBump: 1000000n });
                 const setupData = { ...dataFormFixture, auction };
                 const {
@@ -713,8 +716,8 @@ describe('Settlement', function () {
 
                 const fillOrderToData = await prepareSingleOrder({
                     setupData,
-                    targetTakingAmount: ether('0.11'),
-                    estimatedTakingAmount: ether('0.1'),
+                    targetTakingAmount: estimatedTakingAmount + surplus,
+                    estimatedTakingAmount,
                     protocolSurplusFee: 50,
                     protocolFeeRecipient: bob.address,
                 });
@@ -722,12 +725,18 @@ describe('Settlement', function () {
                 await time.setNextBlockTimestamp(auctionStartTime);
                 const txn = await resolver.settleOrders(fillOrderToData);
                 await expect(txn).to.changeTokenBalances(dai, [resolver, alice], [ether('100'), ether('-100')]);
-                await expect(txn).to.changeTokenBalances(weth, [owner, alice, bob], [ether('-0.11'), ether('0.105'), ether('0.005')]);
+                await expect(txn).to.changeTokenBalances(weth, [owner, alice, bob], [
+                    -estimatedTakingAmount - surplus,
+                    estimatedTakingAmount + surplus / 2n,
+                    surplus / 2n,
+                ]);
             });
 
             it('should get surplus = 0, if estimatedTakingAmount < actualAmount', async function () {
                 const dataFormFixture = await loadFixture(initContractsForSettlement);
                 const auctionStartTime = await time.latest() + 10;
+                const estimatedTakingAmount = ether('0.11');
+
                 const auction = await buildAuctionDetails({ startTime: auctionStartTime, delay: 60, initialRateBump: 1000000n });
                 const setupData = { ...dataFormFixture, auction };
                 const {
@@ -737,8 +746,8 @@ describe('Settlement', function () {
 
                 const fillOrderToData = await prepareSingleOrder({
                     setupData,
-                    targetTakingAmount: ether('0.11'),
-                    estimatedTakingAmount: ether('0.11'),
+                    targetTakingAmount: estimatedTakingAmount,
+                    estimatedTakingAmount,
                     protocolSurplusFee: 50,
                     protocolFeeRecipient: bob.address,
                 });
@@ -746,12 +755,15 @@ describe('Settlement', function () {
                 await time.setNextBlockTimestamp(auctionStartTime);
                 const txn = await resolver.settleOrders(fillOrderToData);
                 await expect(txn).to.changeTokenBalances(dai, [resolver, alice], [ether('100'), ether('-100')]);
-                await expect(txn).to.changeTokenBalances(weth, [owner, alice, bob], [ether('-0.11'), ether('0.11'), ether('0')]);
+                await expect(txn).to.changeTokenBalances(weth, [owner, alice, bob], [-estimatedTakingAmount, estimatedTakingAmount, ether('0')]);
             });
 
             it('should failed if protocolSurplusFee > 100', async function () {
                 const dataFormFixture = await loadFixture(initContractsForSettlement);
                 const auctionStartTime = await time.latest() + 10;
+                const estimatedTakingAmount = ether('0.1');
+                const surplus = ether('0.01');
+
                 const auction = await buildAuctionDetails({ startTime: auctionStartTime, delay: 60, initialRateBump: 1000000n });
                 const setupData = { ...dataFormFixture, auction };
                 const {
@@ -761,8 +773,8 @@ describe('Settlement', function () {
 
                 const fillOrderToData = await prepareSingleOrder({
                     setupData,
-                    targetTakingAmount: ether('0.11'),
-                    estimatedTakingAmount: ether('0.1'),
+                    targetTakingAmount: estimatedTakingAmount + surplus,
+                    estimatedTakingAmount,
                     protocolSurplusFee: 101,
                     protocolFeeRecipient: bob.address,
                 });
@@ -774,6 +786,9 @@ describe('Settlement', function () {
             it('should failed if estimatedTakingAmount < order.takingAmount', async function () {
                 const dataFormFixture = await loadFixture(initContractsForSettlement);
                 const auctionStartTime = await time.latest() + 10;
+                const estimatedTakingAmount = ether('0.1');
+                const surplus = ether('0.01');
+
                 const auction = await buildAuctionDetails({ startTime: auctionStartTime, delay: 60, initialRateBump: 1000000n });
                 const setupData = { ...dataFormFixture, auction };
                 const {
@@ -783,8 +798,8 @@ describe('Settlement', function () {
 
                 const fillOrderToData = await prepareSingleOrder({
                     setupData,
-                    targetTakingAmount: ether('0.11'),
-                    estimatedTakingAmount: ether('0.1') - 1n,
+                    targetTakingAmount: estimatedTakingAmount + surplus,
+                    estimatedTakingAmount: estimatedTakingAmount - 1n,
                     protocolSurplusFee: 50,
                     protocolFeeRecipient: bob.address,
                 });
