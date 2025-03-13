@@ -186,12 +186,14 @@ contract SimpleSettlement is FeeTaker {
      * @param taker The taker address.
      * @param takingAmount The amount of the asset being taken.
      * @param extraData The extra data has the following format:
-     * ```
-     * 2 bytes — integrator fee percentage (in 1e5)
-     * 1 bytes - integrator rev share percentage (in 1e2)
-     * 2 bytes — resolver fee percentage (in 1e5)
-     * 32 bytes - estimated taking amount
-     * 1 byte - protocol surplus fee (in 1e2)
+     * FeeTaker structure determined by `super._getFeeAmounts`:
+     *      2 bytes — integrator fee percentage (in 1e5)
+     *      1 bytes - integrator rev share percentage (in 1e2)
+     *      2 bytes — resolver fee percentage (in 1e5)
+     *      bytes — whitelist structure determined by `_isWhitelistedPostInteractionImpl` implementation
+     * Surpluses fee structure:
+     *      32 bytes - estimated taking amount
+     *      1 byte - protocol surplus fee (in 1e2)
      * ```
      */
     function _getFeeAmounts(IOrderMixin.Order calldata order, address taker, uint256 takingAmount, uint256 makingAmount, bytes calldata extraData) internal override virtual returns (uint256 integratorFeeAmount, uint256 protocolFeeAmount, bytes calldata tail) {
