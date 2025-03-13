@@ -12,6 +12,8 @@ import { FeeTaker } from "@1inch/limit-order-protocol-contract/contracts/extensi
  * @notice Contract to execute limit orders settlement, created by Fusion mode.
  */
 contract SimpleSettlement is FeeTaker {
+    using Math for uint256;
+
     uint256 private constant _BASE_POINTS = 10_000_000; // 100%
     uint256 private constant _GAS_PRICE_BASE = 1_000_000; // 1000 means 1 Gwei
 
@@ -205,11 +207,11 @@ contract SimpleSettlement is FeeTaker {
         }
 
         uint256 actualTakingAmount = takingAmount - integratorFeeAmount - protocolFeeAmount;
-        uint256 scaledEstimatedTakingAmount = Math.mulDiv(estimatedTakingAmount, makingAmount, order.makingAmount);
+        uint256 scaledEstimatedTakingAmount = estimatedTakingAmount.mulDiv(makingAmount, order.makingAmount);
         if (actualTakingAmount > scaledEstimatedTakingAmount) {
             uint256 protocolSurplusFee = uint256(uint8(bytes1(tail[32:])));
             if (protocolSurplusFee > _BASE_1E2) revert InvalidProtocolSurplusFee();
-            protocolFeeAmount += Math.mulDiv(actualTakingAmount - scaledEstimatedTakingAmount, protocolSurplusFee, _BASE_1E2);
+            protocolFeeAmount += (actualTakingAmount - scaledEstimatedTakingAmount).mulDiv(protocolSurplusFee, _BASE_1E2);
         }
         tail = tail[33:];
     }
