@@ -508,6 +508,7 @@ describe('Settlement', function () {
             targetTakingAmount = 0n,
             estimatedTakingAmount = ether('0.1'),
             protocolSurplusFee = 0n,
+            threshold = ether('100'),
             protocolFeeRecipient = setupData.accounts.alice.address,
         }) => {
             const {
@@ -541,7 +542,7 @@ describe('Settlement', function () {
                 },
                 orderSigner: alice,
                 setupData,
-                threshold: ether('100'),
+                threshold,
                 additionalDataForSettlement: resolverCalldata,
                 isInnermostOrder: true,
                 isMakingAmount: false,
@@ -700,7 +701,7 @@ describe('Settlement', function () {
             await expect(txn).to.changeTokenBalances(weth, [owner, alice], [ether('-0.105'), ether('0.105')]);
         });
 
-        describe.only('checking surplus', async function () {
+        describe('checking surplus', async function () {
             it('should get surplus', async function () {
                 const dataFormFixture = await loadFixture(initContractsForSettlement);
                 const auctionStartTime = await time.latest() + 10;
@@ -728,6 +729,38 @@ describe('Settlement', function () {
                 await expect(txn).to.changeTokenBalances(weth, [owner, alice, bob], [
                     -estimatedTakingAmount - surplus,
                     estimatedTakingAmount + surplus / 2n,
+                    surplus / 2n,
+                ]);
+            });
+
+            it('should get surplus for partial fill', async function () {
+                const dataFormFixture = await loadFixture(initContractsForSettlement);
+                const auctionStartTime = await time.latest() + 10;
+                const estimatedTakingAmount = ether('0.1');
+                const surplus = ether('0.005');
+
+                const auction = await buildAuctionDetails({ startTime: auctionStartTime, delay: 60, initialRateBump: 1000000n });
+                const setupData = { ...dataFormFixture, auction };
+                const {
+                    contracts: { dai, weth, resolver },
+                    accounts: { owner, alice, bob },
+                } = setupData;
+
+                const fillOrderToData = await prepareSingleOrder({
+                    setupData,
+                    targetTakingAmount: estimatedTakingAmount / 2n + surplus,
+                    estimatedTakingAmount,
+                    threshold: ether('50'), //
+                    protocolSurplusFee: 50,
+                    protocolFeeRecipient: bob.address,
+                });
+
+                await time.setNextBlockTimestamp(auctionStartTime);
+                const txn = await resolver.settleOrders(fillOrderToData);
+                await expect(txn).to.changeTokenBalances(dai, [resolver, alice], [ether('50'), ether('-50')]);
+                await expect(txn).to.changeTokenBalances(weth, [owner, alice, bob], [
+                    -estimatedTakingAmount / 2n - surplus,
+                    estimatedTakingAmount / 2n + surplus / 2n,
                     surplus / 2n,
                 ]);
             });
