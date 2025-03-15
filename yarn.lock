@@ -21,9 +21,10 @@
     "@1inch/token-plugins" "1.3.0"
     "@openzeppelin/contracts" "5.0.1"
 
-"@1inch/limit-order-protocol-contract@github:1inch/limit-order-protocol#feature/prepare_for_reusing_feeTaker":
-  version "4.2.3"
-  resolved "https://codeload.github.com/1inch/limit-order-protocol/tar.gz/43c6e34d7bb55e402118ab2cb7ca68be301147dc"
+"@1inch/limit-order-protocol-contract@4.3.0":
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/@1inch/limit-order-protocol-contract/-/limit-order-protocol-contract-4.3.0.tgz#cc97a2ddf53bef6d5009086c0e2f9145a0d590e7"
+  integrity sha512-YUNHnF5bWgku93LOlNUhkK/n8eSqw0ZXeR9mOA+tvIMkt98fs/GSjraisbMuVE37EIN6kiBpRC1dnCrPwrHNig==
   dependencies:
     "@1inch/solidity-utils" "6.3.0"
     "@chainlink/contracts" "0.8.0"
