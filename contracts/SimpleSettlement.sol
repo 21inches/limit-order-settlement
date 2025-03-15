@@ -12,10 +12,14 @@ import { FeeTaker } from "@1inch/limit-order-protocol-contract/contracts/extensi
  * @notice Contract to execute limit orders settlement, created by Fusion mode.
  */
 contract SimpleSettlement is FeeTaker {
+    using Math for uint256;
+
     uint256 private constant _BASE_POINTS = 10_000_000; // 100%
     uint256 private constant _GAS_PRICE_BASE = 1_000_000; // 1000 means 1 Gwei
 
     error AllowedTimeViolation();
+    error InvalidProtocolSurplusFee();
+    error InvalidEstimatedTakingAmount();
 
     /**
      * @notice Initializes the contract.
@@ -176,5 +180,39 @@ contract SimpleSettlement is FeeTaker {
                 revert AllowedTimeViolation();
             }
         }
+    }
+
+    /**
+     * @dev Calculates fee amounts depending on whether the taker is in the whitelist and whether they have an _ACCESS_TOKEN.
+     * @param order The user's order.
+     * @param taker The taker address.
+     * @param takingAmount The amount of the asset being taken.
+     * @param extraData The extra data has the following format:
+     * FeeTaker structure determined by `super._getFeeAmounts`:
+     *      2 bytes — integrator fee percentage (in 1e5)
+     *      1 bytes - integrator rev share percentage (in 1e2)
+     *      2 bytes — resolver fee percentage (in 1e5)
+     *      bytes — whitelist structure determined by `_isWhitelistedPostInteractionImpl` implementation
+     * Surpluses fee structure:
+     *      32 bytes - estimated taking amount
+     *      1 byte - protocol surplus fee (in 1e2)
+     * ```
+     */
+    function _getFeeAmounts(IOrderMixin.Order calldata order, address taker, uint256 takingAmount, uint256 makingAmount, bytes calldata extraData) internal override virtual returns (uint256 integratorFeeAmount, uint256 protocolFeeAmount, bytes calldata tail) {
+        (integratorFeeAmount, protocolFeeAmount, tail) = super._getFeeAmounts(order, taker, takingAmount, makingAmount, extraData);
+
+        uint256 estimatedTakingAmount = uint256(bytes32(tail));
+        if (estimatedTakingAmount < order.takingAmount) {
+            revert InvalidEstimatedTakingAmount();
+        }
+
+        uint256 actualTakingAmount = takingAmount - integratorFeeAmount - protocolFeeAmount;
+        uint256 scaledEstimatedTakingAmount = estimatedTakingAmount.mulDiv(makingAmount, order.makingAmount);
+        if (actualTakingAmount > scaledEstimatedTakingAmount) {
+            uint256 protocolSurplusFee = uint256(uint8(bytes1(tail[32:])));
+            if (protocolSurplusFee > _BASE_1E2) revert InvalidProtocolSurplusFee();
+            protocolFeeAmount += (actualTakingAmount - scaledEstimatedTakingAmount).mulDiv(protocolSurplusFee, _BASE_1E2);
+        }
+        tail = tail[33:];
     }
 }
