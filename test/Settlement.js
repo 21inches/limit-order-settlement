@@ -11,9 +11,10 @@ const FEE_BASE = 100000n;
 
 describe('Settlement', function () {
     it('opposite direction recursive swap', async function () {
-        const dataFormFixture = await loadFixture(initContractsForSettlement);
-        const auction = await buildAuctionDetails();
-        const setupData = { ...dataFormFixture, auction };
+        const setupData = {
+            ...await loadFixture(initContractsForSettlement),
+            auction: await buildAuctionDetails(),
+        };
         const {
             contracts: { dai, weth, resolver },
             accounts: { owner, alice },
@@ -55,9 +56,10 @@ describe('Settlement', function () {
     });
 
     it('settle orders with permits, permit', async function () {
-        const dataFormFixture = await loadFixture(initContractsForSettlement);
-        const auction = await buildAuctionDetails();
-        const setupData = { ...dataFormFixture, auction };
+        const setupData = {
+            ...await loadFixture(initContractsForSettlement),
+            auction: await buildAuctionDetails(),
+        };
         const {
             contracts: { dai, weth, lopv4, resolver },
             accounts: { owner, alice },
@@ -105,9 +107,10 @@ describe('Settlement', function () {
     });
 
     it('settle orders with permits, permit2', async function () {
-        const dataFormFixture = await loadFixture(initContractsForSettlement);
-        const auction = await buildAuctionDetails();
-        const setupData = { ...dataFormFixture, auction };
+        const setupData = {
+            ...await loadFixture(initContractsForSettlement),
+            auction: await buildAuctionDetails(),
+        };
         const {
             contracts: { dai, weth, lopv4, resolver },
             accounts: { owner, alice },
@@ -159,9 +162,10 @@ describe('Settlement', function () {
     });
 
     it('opposite direction recursive swap with taking fee', async function () {
-        const dataFormFixture = await loadFixture(initContractsForSettlement);
-        const auction = await buildAuctionDetails();
-        const setupData = { ...dataFormFixture, auction };
+        const setupData = {
+            ...await loadFixture(initContractsForSettlement),
+            auction: await buildAuctionDetails(),
+        };
         const {
             contracts: { dai, weth, resolver },
             accounts: { owner, alice, bob, charlie },
@@ -209,9 +213,10 @@ describe('Settlement', function () {
     });
 
     it('unidirectional recursive swap', async function () {
-        const dataFormFixture = await loadFixture(initContractsForSettlement);
-        const auction = await buildAuctionDetails();
-        const setupData = { ...dataFormFixture, auction };
+        const setupData = {
+            ...await loadFixture(initContractsForSettlement),
+            auction: await buildAuctionDetails(),
+        };
         const {
             contracts: { dai, weth, resolver },
             accounts: { owner, alice },
@@ -273,9 +278,10 @@ describe('Settlement', function () {
     });
 
     it('opposite direction recursive swap with resolverFee and integratorFee', async function () {
-        const dataFormFixture = await loadFixture(initContractsForSettlement);
-        const auction = await buildAuctionDetails();
-        const setupData = { ...dataFormFixture, auction };
+        const setupData = {
+            ...await loadFixture(initContractsForSettlement),
+            auction: await buildAuctionDetails(),
+        };
         const {
             contracts: { dai, weth, resolver },
             accounts: { owner, alice, bob, charlie },
@@ -326,9 +332,10 @@ describe('Settlement', function () {
     });
 
     it('opposite direction recursive swap with resolverFee and integratorFee and custom receiver', async function () {
-        const dataFormFixture = await loadFixture(initContractsForSettlement);
-        const auction = await buildAuctionDetails();
-        const setupData = { ...dataFormFixture, auction };
+        const setupData = {
+            ...await loadFixture(initContractsForSettlement),
+            auction: await buildAuctionDetails(),
+        };
         const {
             contracts: { dai, weth, resolver },
             accounts: { owner, alice, bob, charlie },
@@ -383,9 +390,10 @@ describe('Settlement', function () {
     });
 
     it('opposite direction recursive swap with resolverFee and integratorFee and custom receiver and weth unwrapping', async function () {
-        const dataFormFixture = await loadFixture(initContractsForSettlement);
-        const auction = await buildAuctionDetails();
-        const setupData = { ...dataFormFixture, auction };
+        const setupData = {
+            ...await loadFixture(initContractsForSettlement),
+            auction: await buildAuctionDetails(),
+        };
         const {
             contracts: { dai, weth, resolver },
             accounts: { owner, alice, bob, charlie },
@@ -441,9 +449,10 @@ describe('Settlement', function () {
     });
 
     it('triple recursive swap', async function () {
-        const dataFormFixture = await loadFixture(initContractsForSettlement);
-        const auction = await buildAuctionDetails();
-        const setupData = { ...dataFormFixture, auction };
+        const setupData = {
+            ...await loadFixture(initContractsForSettlement),
+            auction: await buildAuctionDetails(),
+        };
         const {
             contracts: { dai, weth, resolver },
             accounts: { owner, alice },
@@ -557,10 +566,10 @@ describe('Settlement', function () {
         };
 
         it('matching order at first second has maximal rate bump', async function () {
-            const dataFormFixture = await loadFixture(initContractsForSettlement);
-            const now = await time.latest() + 10;
-            const auction = await buildAuctionDetails({ startTime: now, delay: 60, initialRateBump: 1000000n });
-            const setupData = { ...dataFormFixture, auction };
+            const setupData = {
+                ...await loadFixture(initContractsForSettlement),
+                auction: await buildAuctionDetails({ startTime: await time.latest() + 10, delay: 60, initialRateBump: 1000000n }),
+            };
             const {
                 contracts: { dai, weth, resolver },
                 accounts: { owner, alice },
@@ -571,7 +580,7 @@ describe('Settlement', function () {
                 targetTakingAmount: ether('0.11'),
             });
 
-            await time.setNextBlockTimestamp(now);
+            await time.setNextBlockTimestamp(setupData.auction.startTime);
             const txn = await resolver.settleOrders(fillOrderToData);
             await expect(txn).to.changeTokenBalances(dai, [resolver, alice], [ether('100'), ether('-100')]);
             await expect(txn).to.changeTokenBalances(weth, [owner, alice], [ether('-0.11'), ether('0.11')]);
@@ -579,9 +588,10 @@ describe('Settlement', function () {
 
         describe('order with one bump point', async function () {
             it('matching order equal to bump point', async function () {
-                const dataFormFixture = await loadFixture(initContractsForSettlement);
-                const auction = await buildAuctionDetails({ points: [[900000, 240]] });
-                const setupData = { ...dataFormFixture, auction };
+                const setupData = {
+                    ...await loadFixture(initContractsForSettlement),
+                    auction: await buildAuctionDetails({ points: [[900000, 240]] }),
+                };
                 const {
                     contracts: { dai, weth, resolver },
                     accounts: { owner, alice },
@@ -599,9 +609,10 @@ describe('Settlement', function () {
             });
 
             it('matching order before bump point', async function () {
-                const dataFormFixture = await loadFixture(initContractsForSettlement);
-                const auction = await buildAuctionDetails({ initialRateBump: 1000000n, points: [[900000, 240]] });
-                const setupData = { ...dataFormFixture, auction };
+                const setupData = {
+                    ...await loadFixture(initContractsForSettlement),
+                    auction: await buildAuctionDetails({ initialRateBump: 1000000n, points: [[900000, 240]] }),
+                };
                 const {
                     contracts: { dai, weth, resolver },
                     accounts: { owner, alice },
@@ -619,9 +630,10 @@ describe('Settlement', function () {
             });
 
             it('matching order after bump point', async function () {
-                const dataFormFixture = await loadFixture(initContractsForSettlement);
-                const auction = await buildAuctionDetails({ points: [[900000, 240]] });
-                const setupData = { ...dataFormFixture, auction };
+                const setupData = {
+                    ...await loadFixture(initContractsForSettlement),
+                    auction: await buildAuctionDetails({ points: [[900000, 240]] }),
+                };
                 const {
                     contracts: { dai, weth, resolver },
                     accounts: { owner, alice },
@@ -639,9 +651,10 @@ describe('Settlement', function () {
             });
 
             it('matching order between 2 bump point', async function () {
-                const dataFormFixture = await loadFixture(initContractsForSettlement);
-                const auction = await buildAuctionDetails({ points: [[500000, 240], [100000, 1240]] });
-                const setupData = { ...dataFormFixture, auction };
+                const setupData = {
+                    ...await loadFixture(initContractsForSettlement),
+                    auction: await buildAuctionDetails({ points: [[500000, 240], [100000, 1240]] }),
+                };
                 const {
                     contracts: { dai, weth, resolver },
                     accounts: { owner, alice },
@@ -660,10 +673,10 @@ describe('Settlement', function () {
         });
 
         it('set initial rate', async function () {
-            const dataFormFixture = await loadFixture(initContractsForSettlement);
-            const now = await time.latest() + 10;
-            const auction = await buildAuctionDetails({ startTime: now, delay: 60, initialRateBump: 2000000n });
-            const setupData = { ...dataFormFixture, auction };
+            const setupData = {
+                ...await loadFixture(initContractsForSettlement),
+                auction: await buildAuctionDetails({ startTime: await time.latest() + 10, delay: 60, initialRateBump: 2000000n }),
+            };
             const {
                 contracts: { dai, weth, resolver },
                 accounts: { owner, alice },
@@ -674,17 +687,18 @@ describe('Settlement', function () {
                 targetTakingAmount: ether('0.12'),
             });
 
-            await time.setNextBlockTimestamp(now);
+            await time.setNextBlockTimestamp(setupData.auction.startTime);
             const txn = await resolver.settleOrders(fillOrderToData);
             await expect(txn).to.changeTokenBalances(dai, [resolver, alice], [ether('100'), ether('-100')]);
             await expect(txn).to.changeTokenBalances(weth, [owner, alice], [ether('-0.12'), ether('0.12')]);
         });
 
         it('set auctionDuration', async function () {
-            const dataFormFixture = await loadFixture(initContractsForSettlement);
             const now = await time.latest() + 10;
-            const auction = await buildAuctionDetails({ startTime: now - 450, duration: 900, initialRateBump: 1000000n });
-            const setupData = { ...dataFormFixture, auction };
+            const setupData = {
+                ...await loadFixture(initContractsForSettlement),
+                auction: await buildAuctionDetails({ startTime: now - 450, duration: 900, initialRateBump: 1000000n }),
+            };
             const {
                 contracts: { dai, weth, resolver },
                 accounts: { owner, alice },
@@ -703,17 +717,17 @@ describe('Settlement', function () {
 
         describe('checking surplus', async function () {
             it('should get surplus', async function () {
-                const dataFormFixture = await loadFixture(initContractsForSettlement);
-                const auctionStartTime = await time.latest() + 10;
-                const estimatedTakingAmount = ether('0.1');
-                const surplus = ether('0.01');
-
-                const auction = await buildAuctionDetails({ startTime: auctionStartTime, delay: 60, initialRateBump: 1000000n });
-                const setupData = { ...dataFormFixture, auction };
+                const setupData = {
+                    ...await loadFixture(initContractsForSettlement),
+                    auction: await buildAuctionDetails({ startTime: await time.latest() + 10, delay: 60, initialRateBump: 1000000n }),
+                };
                 const {
                     contracts: { dai, weth, resolver },
                     accounts: { owner, alice, bob },
                 } = setupData;
+
+                const estimatedTakingAmount = ether('0.1');
+                const surplus = ether('0.01');
 
                 const fillOrderToData = await prepareSingleOrder({
                     setupData,
@@ -723,7 +737,7 @@ describe('Settlement', function () {
                     protocolFeeRecipient: bob.address,
                 });
 
-                await time.setNextBlockTimestamp(auctionStartTime);
+                await time.setNextBlockTimestamp(setupData.auction.startTime);
                 const txn = await resolver.settleOrders(fillOrderToData);
                 await expect(txn).to.changeTokenBalances(dai, [resolver, alice], [ether('100'), ether('-100')]);
                 await expect(txn).to.changeTokenBalances(weth, [owner, alice, bob], [
@@ -734,17 +748,17 @@ describe('Settlement', function () {
             });
 
             it('should get surplus for partial fill', async function () {
-                const dataFormFixture = await loadFixture(initContractsForSettlement);
-                const auctionStartTime = await time.latest() + 10;
-                const estimatedTakingAmount = ether('0.1');
-                const surplus = ether('0.005');
-
-                const auction = await buildAuctionDetails({ startTime: auctionStartTime, delay: 60, initialRateBump: 1000000n });
-                const setupData = { ...dataFormFixture, auction };
+                const setupData = {
+                    ...await loadFixture(initContractsForSettlement),
+                    auction: await buildAuctionDetails({ startTime: await time.latest() + 10, delay: 60, initialRateBump: 1000000n }),
+                };
                 const {
                     contracts: { dai, weth, resolver },
                     accounts: { owner, alice, bob },
                 } = setupData;
+
+                const estimatedTakingAmount = ether('0.1');
+                const surplus = ether('0.005');
 
                 const fillOrderToData = await prepareSingleOrder({
                     setupData,
@@ -755,7 +769,7 @@ describe('Settlement', function () {
                     protocolFeeRecipient: bob.address,
                 });
 
-                await time.setNextBlockTimestamp(auctionStartTime);
+                await time.setNextBlockTimestamp(setupData.auction.startTime);
                 const txn = await resolver.settleOrders(fillOrderToData);
                 await expect(txn).to.changeTokenBalances(dai, [resolver, alice], [ether('50'), ether('-50')]);
                 await expect(txn).to.changeTokenBalances(weth, [owner, alice, bob], [
@@ -766,16 +780,16 @@ describe('Settlement', function () {
             });
 
             it('should get surplus = 0, if estimatedTakingAmount < actualAmount', async function () {
-                const dataFormFixture = await loadFixture(initContractsForSettlement);
-                const auctionStartTime = await time.latest() + 10;
-                const estimatedTakingAmount = ether('0.11');
-
-                const auction = await buildAuctionDetails({ startTime: auctionStartTime, delay: 60, initialRateBump: 1000000n });
-                const setupData = { ...dataFormFixture, auction };
+                const setupData = {
+                    ...await loadFixture(initContractsForSettlement),
+                    auction: await buildAuctionDetails({ startTime: await time.latest() + 10, delay: 60, initialRateBump: 1000000n }),
+                };
                 const {
                     contracts: { dai, weth, resolver },
                     accounts: { owner, alice, bob },
                 } = setupData;
+
+                const estimatedTakingAmount = ether('0.11');
 
                 const fillOrderToData = await prepareSingleOrder({
                     setupData,
@@ -785,24 +799,24 @@ describe('Settlement', function () {
                     protocolFeeRecipient: bob.address,
                 });
 
-                await time.setNextBlockTimestamp(auctionStartTime);
+                await time.setNextBlockTimestamp(setupData.auction.startTime);
                 const txn = await resolver.settleOrders(fillOrderToData);
                 await expect(txn).to.changeTokenBalances(dai, [resolver, alice], [ether('100'), ether('-100')]);
                 await expect(txn).to.changeTokenBalances(weth, [owner, alice, bob], [-estimatedTakingAmount, estimatedTakingAmount, ether('0')]);
             });
 
             it('should failed if protocolSurplusFee > 100', async function () {
-                const dataFormFixture = await loadFixture(initContractsForSettlement);
-                const auctionStartTime = await time.latest() + 10;
-                const estimatedTakingAmount = ether('0.1');
-                const surplus = ether('0.01');
-
-                const auction = await buildAuctionDetails({ startTime: auctionStartTime, delay: 60, initialRateBump: 1000000n });
-                const setupData = { ...dataFormFixture, auction };
+                const setupData = {
+                    ...await loadFixture(initContractsForSettlement),
+                    auction: await buildAuctionDetails({ startTime: await time.latest() + 10, delay: 60, initialRateBump: 1000000n }),
+                };
                 const {
                     contracts: { resolver, settlement },
                     accounts: { bob },
                 } = setupData;
+
+                const estimatedTakingAmount = ether('0.1');
+                const surplus = ether('0.01');
 
                 const fillOrderToData = await prepareSingleOrder({
                     setupData,
@@ -812,22 +826,22 @@ describe('Settlement', function () {
                     protocolFeeRecipient: bob.address,
                 });
 
-                await time.setNextBlockTimestamp(auctionStartTime);
+                await time.setNextBlockTimestamp(setupData.auction.startTime);
                 await expect(resolver.settleOrders(fillOrderToData)).to.be.revertedWithCustomError(settlement, 'InvalidProtocolSurplusFee');
             });
 
             it('should failed if estimatedTakingAmount < order.takingAmount', async function () {
-                const dataFormFixture = await loadFixture(initContractsForSettlement);
-                const auctionStartTime = await time.latest() + 10;
-                const estimatedTakingAmount = ether('0.1');
-                const surplus = ether('0.01');
-
-                const auction = await buildAuctionDetails({ startTime: auctionStartTime, delay: 60, initialRateBump: 1000000n });
-                const setupData = { ...dataFormFixture, auction };
+                const setupData = {
+                    ...await loadFixture(initContractsForSettlement),
+                    auction: await buildAuctionDetails({ startTime: await time.latest() + 10, delay: 60, initialRateBump: 1000000n }),
+                };
                 const {
                     contracts: { resolver, settlement },
                     accounts: { bob },
                 } = setupData;
+
+                const estimatedTakingAmount = ether('0.1');
+                const surplus = ether('0.01');
 
                 const fillOrderToData = await prepareSingleOrder({
                     setupData,
@@ -837,16 +851,17 @@ describe('Settlement', function () {
                     protocolFeeRecipient: bob.address,
                 });
 
-                await time.setNextBlockTimestamp(auctionStartTime);
+                await time.setNextBlockTimestamp(setupData.auction.startTime);
                 await expect(resolver.settleOrders(fillOrderToData)).to.be.revertedWithCustomError(settlement, 'InvalidEstimatedTakingAmount');
             });
         });
     });
 
     it('partial fill with taking fee', async function () {
-        const dataFormFixture = await loadFixture(initContractsForSettlement);
-        const auction = await buildAuctionDetails();
-        const setupData = { ...dataFormFixture, auction };
+        const setupData = {
+            ...await loadFixture(initContractsForSettlement),
+            auction: await buildAuctionDetails(),
+        };
         const {
             contracts: { dai, weth, resolver },
             accounts: { owner, alice, bob, charlie },
@@ -907,9 +922,10 @@ describe('Settlement', function () {
     });
 
     it('should not pay resolver fee when whitelisted address and it has accessToken', async function () {
-        const dataFormFixture = await loadFixture(initContractsForSettlement);
-        const auction = await buildAuctionDetails();
-        const setupData = { ...dataFormFixture, auction };
+        const setupData = {
+            ...await loadFixture(initContractsForSettlement),
+            auction: await buildAuctionDetails(),
+        };
         const {
             contracts: { dai, weth, resolver },
             accounts: { alice },
@@ -940,9 +956,10 @@ describe('Settlement', function () {
     });
 
     it('should not pay resolver fee when whitelisted address and it has not accessToken', async function () {
-        const dataFormFixture = await loadFixture(initContractsForSettlement);
-        const auction = await buildAuctionDetails();
-        const setupData = { ...dataFormFixture, auction };
+        const setupData = {
+            ...await loadFixture(initContractsForSettlement),
+            auction: await buildAuctionDetails(),
+        };
         const {
             contracts: { dai, weth, accessToken, resolver },
             accounts: { alice },
@@ -975,9 +992,10 @@ describe('Settlement', function () {
     });
 
     it('should pay resolver fee when non-whitelisted address and it has accessToken', async function () {
-        const dataFormFixture = await loadFixture(initContractsForSettlement);
-        const auction = await buildAuctionDetails();
-        const setupData = { ...dataFormFixture, auction };
+        const setupData = {
+            ...await loadFixture(initContractsForSettlement),
+            auction: await buildAuctionDetails(),
+        };
         const {
             contracts: { dai, weth, resolver },
             accounts: { alice, bob, charlie },
@@ -1009,9 +1027,10 @@ describe('Settlement', function () {
     });
 
     it('should revert when non-whitelisted address and it has not accessToken', async function () {
-        const dataFormFixture = await loadFixture(initContractsForSettlement);
-        const auction = await buildAuctionDetails();
-        const setupData = { ...dataFormFixture, auction };
+        const setupData = {
+            ...await loadFixture(initContractsForSettlement),
+            auction: await buildAuctionDetails(),
+        };
         const {
             contracts: { dai, weth, accessToken, resolver, settlement },
             accounts: { alice },
@@ -1041,9 +1060,10 @@ describe('Settlement', function () {
 
     describe('whitelist lock period', async function () {
         it('should change only after whitelistedCutOff without accessToken', async function () {
-            const dataFormFixture = await loadFixture(initContractsForSettlement);
-            const auction = await buildAuctionDetails({ startTime: await time.latest() + time.duration.hours('3') });
-            const setupData = { ...dataFormFixture, auction };
+            const setupData = {
+                ...await loadFixture(initContractsForSettlement),
+                auction: await buildAuctionDetails({ startTime: await time.latest() + time.duration.hours('3') }),
+            };
             const {
                 contracts: { dai, weth, accessToken, resolver, settlement },
                 accounts: { owner, alice },
@@ -1091,9 +1111,10 @@ describe('Settlement', function () {
         });
 
         it('should change only after whitelistedCutOff with accessToken', async function () {
-            const dataFormFixture = await loadFixture(initContractsForSettlement);
-            const auction = await buildAuctionDetails({ startTime: await time.latest() + time.duration.hours('3') });
-            const setupData = { ...dataFormFixture, auction };
+            const setupData = {
+                ...await loadFixture(initContractsForSettlement),
+                auction: await buildAuctionDetails({ startTime: await time.latest() + time.duration.hours('3') }),
+            };
             const {
                 contracts: { dai, weth, resolver, settlement },
                 accounts: { owner, alice },
@@ -1139,9 +1160,10 @@ describe('Settlement', function () {
 
     describe('custom postInteraction', async function () {
         it('should call custom extension', async function () {
-            const dataFormFixture = await loadFixture(initContractsForSettlement);
-            const auction = await buildAuctionDetails();
-            const setupData = { ...dataFormFixture, auction };
+            const setupData = {
+                ...await loadFixture(initContractsForSettlement),
+                auction: await buildAuctionDetails(),
+            };
             const {
                 contracts: { dai, weth, resolver },
                 accounts: { owner, alice },
