@@ -209,7 +209,7 @@ contract SimpleSettlement is FeeTaker {
         uint256 actualTakingAmount = takingAmount - integratorFeeAmount - protocolFeeAmount;
         uint256 scaledEstimatedTakingAmount = estimatedTakingAmount.mulDiv(makingAmount, order.makingAmount);
         if (actualTakingAmount > scaledEstimatedTakingAmount) {
-            uint256 protocolSurplusFee = uint256(uint8(bytes1(tail[32:])));
+            uint256 protocolSurplusFee = uint256(uint8(tail[32]));
             if (protocolSurplusFee > _BASE_1E2) revert InvalidProtocolSurplusFee();
             protocolFeeAmount += (actualTakingAmount - scaledEstimatedTakingAmount).mulDiv(protocolSurplusFee, _BASE_1E2);
         }
