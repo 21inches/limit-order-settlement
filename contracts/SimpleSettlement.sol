@@ -33,6 +33,43 @@ contract SimpleSettlement is FeeTaker {
     {}
 
     /**
+     * @dev Calculates fee amounts depending on whether the taker is in the whitelist and whether they have an _ACCESS_TOKEN.
+     * @param order The user's order.
+     * @param taker The taker address.
+     * @param takingAmount The amount of the asset being taken.
+     * @param extraData The extra data has the following format:
+     * FeeTaker structure determined by `super._getFeeAmounts`:
+     *      2 bytes — integrator fee percentage (in 1e5)
+     *      1 bytes - integrator rev share percentage (in 1e2)
+     *      2 bytes — resolver fee percentage (in 1e5)
+     *      bytes — whitelist structure determined by `_isWhitelistedPostInteractionImpl` implementation
+     * Surpluses fee structure:
+     *      32 bytes - estimated taking amount
+     *      1 byte - protocol surplus fee (in 1e2)
+     * ```
+     * @return integratorFeeAmount Fee amount paid to the integrator.
+     * @return protocolFeeAmount Fee amount paid to the protocol.
+     * @return tail Remaining calldata after processing fee-related fields.
+     */
+    function _getFeeAmounts(IOrderMixin.Order calldata order, address taker, uint256 takingAmount, uint256 makingAmount, bytes calldata extraData) internal virtual override returns (uint256 integratorFeeAmount, uint256 protocolFeeAmount, bytes calldata tail) {
+        (integratorFeeAmount, protocolFeeAmount, tail) = super._getFeeAmounts(order, taker, takingAmount, makingAmount, extraData);
+
+        uint256 estimatedTakingAmount = uint256(bytes32(tail));
+        if (estimatedTakingAmount < order.takingAmount) {
+            revert InvalidEstimatedTakingAmount();
+        }
+
+        uint256 actualTakingAmount = takingAmount - integratorFeeAmount - protocolFeeAmount;
+        uint256 scaledEstimatedTakingAmount = estimatedTakingAmount.mulDiv(makingAmount, order.makingAmount);
+        if (actualTakingAmount > scaledEstimatedTakingAmount) {
+            uint256 protocolSurplusFee = uint256(uint8(tail[32]));
+            if (protocolSurplusFee > _BASE_1E2) revert InvalidProtocolSurplusFee();
+            protocolFeeAmount += (actualTakingAmount - scaledEstimatedTakingAmount).mulDiv(protocolSurplusFee, _BASE_1E2);
+        }
+        tail = tail[33:];
+    }
+
+    /**
      * @dev Adds dutch auction capabilities to the getter
      */
     function _getMakingAmount(
@@ -71,6 +108,43 @@ contract SimpleSettlement is FeeTaker {
             _BASE_POINTS,
             Math.Rounding.Ceil
         );
+    }
+
+    /**
+     * @dev Validates whether the taker is whitelisted.
+     * @param whitelistData Whitelist data is a tightly packed struct of the following format:
+     * ```
+     * 4 bytes - allowed time
+     * 1 byte - size of the whitelist
+     * (bytes12)[N] — taker whitelist
+     * ```
+     * Only 10 lowest bytes of the address are used for comparison.
+     * @param taker The taker address to check.
+     * @return isWhitelisted Whether the taker is whitelisted.
+     * @return tail Remaining calldata.
+     */
+    function _isWhitelistedPostInteractionImpl(bytes calldata whitelistData, address taker) internal view override returns (bool isWhitelisted, bytes calldata tail) {
+        unchecked {
+            uint80 maskedTakerAddress = uint80(uint160(taker));
+            uint256 allowedTime = uint32(bytes4(whitelistData));
+            uint256 size = uint8(whitelistData[4]);
+            bytes calldata whitelist = whitelistData[5:5 + 12 * size];
+            tail = whitelistData[5 + 12 * size:];
+
+            for (uint256 i = 0; i < size; i++) {
+                uint80 whitelistedAddress = uint80(bytes10(whitelist));
+                if (block.timestamp < allowedTime) {
+                    revert AllowedTimeViolation();
+                } else if (maskedTakerAddress == whitelistedAddress) {
+                    return (true, tail);
+                }
+                allowedTime += uint16(bytes2(whitelist[10:])); // add next time delta
+                whitelist = whitelist[12:];
+            }
+            if (block.timestamp < allowedTime) {
+                revert AllowedTimeViolation();
+            }
+        }
     }
 
     /**
@@ -145,79 +219,5 @@ contract SimpleSettlement is FeeTaker {
             }
             return ((auctionFinishTime - block.timestamp) * currentRateBump / (auctionFinishTime - currentPointTime), tail);
         }
-    }
-
-    /**
-     * @dev Validates whether the taker is whitelisted.
-     * @param whitelistData Whitelist data is a tightly packed struct of the following format:
-     * ```
-     * 4 bytes - allowed time
-     * 1 byte - size of the whitelist
-     * (bytes12)[N] — taker whitelist
-     * ```
-     * Only 10 lowest bytes of the address are used for comparison.
-     * @param taker The taker address to check.
-     * @return isWhitelisted Whether the taker is whitelisted.
-     * @return tail Remaining calldata.
-     */
-    function _isWhitelistedPostInteractionImpl(bytes calldata whitelistData, address taker) internal view override returns (bool isWhitelisted, bytes calldata tail) {
-        unchecked {
-            uint80 maskedTakerAddress = uint80(uint160(taker));
-            uint256 allowedTime = uint32(bytes4(whitelistData));
-            uint256 size = uint8(whitelistData[4]);
-            bytes calldata whitelist = whitelistData[5:5 + 12 * size];
-            tail = whitelistData[5 + 12 * size:];
-
-            for (uint256 i = 0; i < size; i++) {
-                uint80 whitelistedAddress = uint80(bytes10(whitelist));
-                if (block.timestamp < allowedTime) {
-                    revert AllowedTimeViolation();
-                } else if (maskedTakerAddress == whitelistedAddress) {
-                    return (true, tail);
-                }
-                allowedTime += uint16(bytes2(whitelist[10:])); // add next time delta
-                whitelist = whitelist[12:];
-            }
-            if (block.timestamp < allowedTime) {
-                revert AllowedTimeViolation();
-            }
-        }
-    }
-
-    /**
-     * @dev Calculates fee amounts depending on whether the taker is in the whitelist and whether they have an _ACCESS_TOKEN.
-     * @param order The user's order.
-     * @param taker The taker address.
-     * @param takingAmount The amount of the asset being taken.
-     * @param extraData The extra data has the following format:
-     * FeeTaker structure determined by `super._getFeeAmounts`:
-     *      2 bytes — integrator fee percentage (in 1e5)
-     *      1 bytes - integrator rev share percentage (in 1e2)
-     *      2 bytes — resolver fee percentage (in 1e5)
-     *      bytes — whitelist structure determined by `_isWhitelistedPostInteractionImpl` implementation
-     * Surpluses fee structure:
-     *      32 bytes - estimated taking amount
-     *      1 byte - protocol surplus fee (in 1e2)
-     * ```
-     * @return integratorFeeAmount Fee amount paid to the integrator.
-     * @return protocolFeeAmount Fee amount paid to the protocol.
-     * @return tail Remaining calldata after processing fee-related fields.
-     */
-    function _getFeeAmounts(IOrderMixin.Order calldata order, address taker, uint256 takingAmount, uint256 makingAmount, bytes calldata extraData) internal virtual override returns (uint256 integratorFeeAmount, uint256 protocolFeeAmount, bytes calldata tail) {
-        (integratorFeeAmount, protocolFeeAmount, tail) = super._getFeeAmounts(order, taker, takingAmount, makingAmount, extraData);
-
-        uint256 estimatedTakingAmount = uint256(bytes32(tail));
-        if (estimatedTakingAmount < order.takingAmount) {
-            revert InvalidEstimatedTakingAmount();
-        }
-
-        uint256 actualTakingAmount = takingAmount - integratorFeeAmount - protocolFeeAmount;
-        uint256 scaledEstimatedTakingAmount = estimatedTakingAmount.mulDiv(makingAmount, order.makingAmount);
-        if (actualTakingAmount > scaledEstimatedTakingAmount) {
-            uint256 protocolSurplusFee = uint256(uint8(tail[32]));
-            if (protocolSurplusFee > _BASE_1E2) revert InvalidProtocolSurplusFee();
-            protocolFeeAmount += (actualTakingAmount - scaledEstimatedTakingAmount).mulDiv(protocolSurplusFee, _BASE_1E2);
-        }
-        tail = tail[33:];
     }
 }
