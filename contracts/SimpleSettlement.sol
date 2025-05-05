@@ -198,7 +198,7 @@ contract SimpleSettlement is FeeTaker {
      *      1 byte - protocol surplus fee (in 1e2)
      * ```
      */
-    function _getFeeAmounts(IOrderMixin.Order calldata order, address taker, uint256 takingAmount, uint256 makingAmount, bytes calldata extraData) internal override virtual returns (uint256 integratorFeeAmount, uint256 protocolFeeAmount, bytes calldata tail) {
+    function _getFeeAmounts(IOrderMixin.Order calldata order, address taker, uint256 takingAmount, uint256 makingAmount, bytes calldata extraData) internal virtual override returns (uint256 integratorFeeAmount, uint256 protocolFeeAmount, bytes calldata tail) {
         (integratorFeeAmount, protocolFeeAmount, tail) = super._getFeeAmounts(order, taker, takingAmount, makingAmount, extraData);
 
         uint256 estimatedTakingAmount = uint256(bytes32(tail));
