@@ -89,6 +89,7 @@ contract SimpleSettlement is FeeTaker {
      * }
      * ```
      * @return rateBump The rate bump.
+     * @return Remaining calldata after parsing auction data.
      */
     function _getRateBump(bytes calldata auctionDetails) private view returns (uint256, bytes calldata) {
         unchecked {
@@ -114,6 +115,7 @@ contract SimpleSettlement is FeeTaker {
      * @param initialRateBump The initial rate bump.
      * @param pointsAndTimeDeltas The points and time deltas structure.
      * @return The rate bump at the current time.
+     * @return Remaining calldata after the parsed points.
      */
     function _getAuctionBump(
         uint256 auctionStartTime, uint256 auctionFinishTime, uint256 initialRateBump, bytes calldata pointsAndTimeDeltas
@@ -197,6 +199,9 @@ contract SimpleSettlement is FeeTaker {
      *      32 bytes - estimated taking amount
      *      1 byte - protocol surplus fee (in 1e2)
      * ```
+     * @return integratorFeeAmount Fee amount paid to the integrator.
+     * @return protocolFeeAmount Fee amount paid to the protocol.
+     * @return tail Remaining calldata after processing fee-related fields.
      */
     function _getFeeAmounts(IOrderMixin.Order calldata order, address taker, uint256 takingAmount, uint256 makingAmount, bytes calldata extraData) internal override virtual returns (uint256 integratorFeeAmount, uint256 protocolFeeAmount, bytes calldata tail) {
         (integratorFeeAmount, protocolFeeAmount, tail) = super._getFeeAmounts(order, taker, takingAmount, makingAmount, extraData);
