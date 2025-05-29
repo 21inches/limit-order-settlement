@@ -15,12 +15,14 @@ const WETH = {
     8217: '0xe4f05A66Ec68B54A58B17c22107b02e0232cC817', // Klaytn
     8453: '0x4200000000000000000000000000000000000006', // Base
     59144: '0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f', // Linea
+    146: '0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38', // Sonic
+    130: '0x4200000000000000000000000000000000000006', // Unichain
     31337: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // Hardhat
 };
 
 const ROUTER_V6_ADDR = '0x111111125421ca6dc452d289314280a0f8842a65';
 
-const SETTLEMENT_SALT = ethers.keccak256(ethers.toUtf8Bytes('1inch Settlement V3'));
+const SETTLEMENT_SALT = ethers.keccak256(ethers.toUtf8Bytes('1inch Settlement V3.1'));
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
     const chainId = await getChainId();
