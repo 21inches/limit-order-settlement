@@ -66,5 +66,8 @@
     "solidity-coverage": "0.8.13",
     "solidity-docgen": "0.6.0-beta.36",
     "zksync-ethers": "6.15.0"
+  },
+  "resolutions": {
+    "elliptic": "6.6.1"
   }
 }
