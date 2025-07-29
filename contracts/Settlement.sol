@@ -14,6 +14,9 @@ import { SimpleSettlement } from "./SimpleSettlement.sol";
 contract Settlement is SimpleSettlement {
     error InvalidPriorityFee();
 
+    uint256 private constant THRESHOLD_1 = 10_600_000_000; // 10.6 gwei
+    uint256 private constant THRESHOLD_2 = 104_100_000_000; // 104.1 gwei
+
     constructor(address limitOrderProtocol, IERC20 accessToken, address weth, address owner)
         SimpleSettlement(limitOrderProtocol, accessToken, weth, owner)
     {}
@@ -44,9 +47,9 @@ contract Settlement is SimpleSettlement {
             uint256 baseFee = block.basefee;
             uint256 priorityFee = tx.gasprice - baseFee;
 
-            if (baseFee < 10.6 gwei) {
+            if (baseFee < THRESHOLD_1) {
                 return priorityFee * 100 <= baseFee * 70;
-            } else if (baseFee > 104.1 gwei) {
+            } else if (baseFee > THRESHOLD_2) {
                 return priorityFee * 100 <= baseFee * 65;
             } else {
                 return priorityFee * 2 <= baseFee;
