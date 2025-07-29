@@ -9,5 +9,5 @@ module.exports = function (deployer) {
     ];
 
     // Deploy the KycNFT contract
-    deployer.deploy(kycNFT, constructorArgs);
+    deployer.deploy(kycNFT, ...constructorArgs);
 };
